@@ -5,8 +5,9 @@
   "main": "server.js",
   "scripts": {
     "dev": "npx tsx --watch src/server.ts",
-    "start": "node server.js",
-    "build": "tsc src/server.ts --outDir dist"
+    "start": "npx tsx src/server.ts",
+    "simple-dev": "node simple-server.js",
+    "build": "echo 'No build needed for RivetKit'"
   },
   "dependencies": {
     "@hono/node-server": "^1.15.0",

@@ -1,6 +1,16 @@
-import { registry } from "./registry";
+import { registry } from "./registry.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+
+interface RoomListItem {
+  id: string;
+  name: string;
+  creator: string;
+  playerCount: number;
+  spectatorCount: number;
+  gameState: string;
+  createdAt: string;
+}
 
 // RivetKit 서버 및 클라이언트 생성
 const { client, serve } = registry.createServer();
@@ -30,7 +40,11 @@ app.post('/api/lobby/join', async (c) => {
     
     if (result.success) {
       players.set(playerId, { name: playerName });
-      return c.json({ success: true, ...result });
+      return c.json({ 
+        success: true, 
+        chatHistory: result.chatHistory,
+        rooms: result.rooms
+      });
     } else {
       return c.json({ success: false, error: "로비 참가 실패" }, 400);
     }
@@ -220,7 +234,7 @@ app.post('/api/room/reset', async (c) => {
 // 방 목록 가져오기 API
 app.get('/api/rooms', async (c) => {
   try {
-    const roomList = [];
+    const roomList: RoomListItem[] = [];
     
     for (const [roomId] of rooms) {
       const roomActor = client.gameRoom.getOrCreate(roomId);
@@ -275,7 +289,7 @@ app.get('/api/room/:roomId/state', async (c) => {
 // 방 목록 업데이트 헬퍼 함수
 async function updateRoomList() {
   try {
-    const roomList = [];
+    const roomList: RoomListItem[] = [];
     
     for (const [roomId] of rooms) {
       const roomActor = client.gameRoom.getOrCreate(roomId);
