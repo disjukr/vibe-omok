@@ -1,4 +1,4 @@
-import { registry } from "./registry.js";
+import { registry } from "./registry.ts";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 

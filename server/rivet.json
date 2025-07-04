@@ -4,6 +4,7 @@
     "server": "src/server.ts",
     "build": {
       "platform": "node"
-    }
+    },
+    "runtime": "deno"
   }
 }
