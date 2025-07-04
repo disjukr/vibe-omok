@@ -421,8 +421,8 @@ const App = () => {
             borderRadius: '8px',
             boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
           })}>
-            {currentRoom.board.map((row, rowIndex) =>
-              row.map((cell, colIndex) => (
+            {currentRoom.board && currentRoom.board.map((row, rowIndex) =>
+              row && row.map((cell, colIndex) => (
                 <div
                   key={`${rowIndex}-${colIndex}`}
                   className={css({
@@ -476,7 +476,7 @@ const App = () => {
             <h3 className={css({ marginBottom: '15px', color: '#333' })}>
               플레이어
             </h3>
-            {currentRoom.players.map((player) => (
+            {currentRoom.players && currentRoom.players.map((player) => (
               <div
                 key={player.id}
                 className={css({
@@ -501,7 +501,7 @@ const App = () => {
               </div>
             ))}
 
-            {currentRoom.spectators.length > 0 && (
+            {currentRoom.spectators && currentRoom.spectators.length > 0 && (
               <>
                 <h4 className={css({ marginTop: '15px', marginBottom: '10px', color: '#666' })}>
                   관전자
@@ -544,7 +544,7 @@ const App = () => {
               overflowY: 'auto',
               maxHeight: 'calc(100vh - 400px)'
             })}>
-              {currentRoom.chatHistory.map((msg) => (
+              {currentRoom.chatHistory && currentRoom.chatHistory.map((msg) => (
                 <div
                   key={msg.id}
                   className={css({

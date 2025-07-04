@@ -47,7 +47,7 @@ export interface RoomState {
   chatHistory: ChatMessage[];
 }
 
-const SERVER_URL = 'http://localhost:8080';
+const SERVER_URL = 'http://127.0.0.1:8787';
 
 export const useGameClient = () => {
   const [playerId] = useState(() => crypto.randomUUID());
@@ -58,8 +58,10 @@ export const useGameClient = () => {
   const [lobbyChatHistory, setLobbyChatHistory] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   
-  // 폴링을 위한 상태
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  // Server-Sent Events 연결
+  const [eventSource, setEventSource] = useState<EventSource | null>(null);
+  // 폴링을 위한 상태 (방 상태용)
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
   // 방 목록 새로고침
   const refreshRooms = useCallback(async () => {
@@ -93,12 +95,57 @@ export const useGameClient = () => {
     try {
       const response = await fetch(`${SERVER_URL}/api/room/${roomId}/state`);
       const result = await response.json();
+      console.log('방 상태 응답:', result);
       if (result.success) {
-        setCurrentRoom(result.roomState);
+        console.log('방 상태 업데이트:', result.gameState);
+        setCurrentRoom(result.gameState);
+      } else {
+        console.error('방 상태 가져오기 실패:', result);
       }
     } catch (error) {
       console.error('방 상태 새로고침 오류:', error);
     }
+  }, []);
+
+  // Server-Sent Events 연결
+  const connectEventSource = useCallback(() => {
+    const es = new EventSource(`${SERVER_URL}/events`);
+    
+    es.onopen = () => {
+      console.log('SSE 연결됨');
+      setEventSource(es);
+    };
+    
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('SSE 메시지 수신:', data);
+        
+        switch (data.type) {
+          case 'connected':
+            console.log('SSE 연결 확인됨');
+            break;
+          case 'lobby-chat':
+            setLobbyChatHistory(prev => [...prev, data.message]);
+            break;
+          case 'rooms-updated':
+            setRooms(data.rooms);
+            break;
+        }
+      } catch (error) {
+        console.error('SSE 메시지 파싱 오류:', error);
+      }
+    };
+    
+    es.onerror = (error) => {
+      console.error('SSE 오류:', error);
+      es.close();
+      setEventSource(null);
+      // 자동 재연결
+      setTimeout(connectEventSource, 1000);
+    };
+    
+    return es;
   }, []);
 
   // 로비 참가
@@ -117,12 +164,8 @@ export const useGameClient = () => {
         setRooms(result.rooms || []);
         setIsConnected(true);
         
-        // 폴링 시작 (실시간 업데이트를 위해)
-        const interval = setInterval(() => {
-          refreshRooms();
-          refreshLobbyChat();
-        }, 2000);
-        setPollingInterval(interval);
+        // Server-Sent Events 연결
+        connectEventSource();
         
         return true;
       }
@@ -131,7 +174,7 @@ export const useGameClient = () => {
       console.error('로비 참가 오류:', error);
       return false;
     }
-  }, [playerId, refreshRooms, refreshLobbyChat]);
+  }, [playerId, connectEventSource]);
 
   // 로비 채팅 보내기
   const sendLobbyChat = useCallback(async (message: string) => {
@@ -141,12 +184,11 @@ export const useGameClient = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, message })
       });
-      // 즉시 채팅 새로고침
-      setTimeout(refreshLobbyChat, 100);
+      // SSE로 실시간 업데이트됨
     } catch (error) {
       console.error('로비 채팅 오류:', error);
     }
-  }, [playerId, refreshLobbyChat]);
+  }, [playerId]);
 
   // 방 생성
   const createRoom = useCallback(async (roomName: string) => {
@@ -154,12 +196,12 @@ export const useGameClient = () => {
       const response = await fetch(`${SERVER_URL}/api/room/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, roomName })
+        body: JSON.stringify({ playerId, roomName, playerName })
       });
       
       const result = await response.json();
       if (result.success) {
-        setCurrentRoom(result.roomState);
+        setCurrentRoom(result.gameState);
         setGameState('room');
         
         // 방 상태 폴링 시작
@@ -186,12 +228,12 @@ export const useGameClient = () => {
       const response = await fetch(`${SERVER_URL}/api/room/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, roomId, asSpectator })
+        body: JSON.stringify({ playerId, roomId, asSpectator, playerName })
       });
       
       const result = await response.json();
       if (result.success) {
-        setCurrentRoom(result.roomState);
+        setCurrentRoom(result.gameState);
         setGameState('room');
         
         // 방 상태 폴링 시작
@@ -297,14 +339,17 @@ export const useGameClient = () => {
     }
   }, [currentRoom, refreshRoomState]);
 
-  // 컴포넌트 언마운트 시 폴링 정리
+  // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
       if (pollingInterval) {
         clearInterval(pollingInterval);
       }
+      if (eventSource) {
+        eventSource.close();
+      }
     };
-  }, [pollingInterval]);
+  }, [pollingInterval, eventSource]);
 
   return {
     // 상태
