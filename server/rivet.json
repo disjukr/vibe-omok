@@ -1,6 +1,9 @@
 {
   "rivetkit": {
     "registry": "src/registry.ts",
-    "server": "src/server.ts"
+    "server": "src/server.ts",
+    "build": {
+      "platform": "node"
+    }
   }
 }
