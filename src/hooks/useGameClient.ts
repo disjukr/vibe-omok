@@ -59,7 +59,7 @@ export const useGameClient = () => {
   const [isConnected, setIsConnected] = useState(false);
   
   // 폴링을 위한 상태
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   // 방 목록 새로고침
   const refreshRooms = useCallback(async () => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { css } from '../styled-system/css'
-import { useGameClient, type Room, type ChatMessage, type Player } from './hooks/useGameClient'
+import { useGameClient } from './hooks/useGameClient'
 
 const App = () => {
   const {
