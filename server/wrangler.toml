@@ -11,4 +11,4 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Lobby", "GameRoom"]
+new_sqlite_classes = ["Lobby", "GameRoom"]

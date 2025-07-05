@@ -47,7 +47,9 @@ export interface RoomState {
   chatHistory: ChatMessage[];
 }
 
-const SERVER_URL = 'http://127.0.0.1:8787';
+const SERVER_URL = import.meta.env.DEV 
+  ? 'http://127.0.0.1:8787' 
+  : 'https://omok-game.jongchan-choi.workers.dev';
 
 export const useGameClient = () => {
   const [playerId] = useState(() => crypto.randomUUID());
